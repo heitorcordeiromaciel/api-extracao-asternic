@@ -41,11 +41,9 @@
         const queueDiv = document.getElementById('queues');
         const agentsBody = document.getElementById('agents-body');
   
-        // Clear previous content
         queueDiv.innerHTML = '';
         agentsBody.innerHTML = '';
   
-        // Show queue summaries
         queues.forEach(queue => {
           const qEl = document.createElement('div');
           qEl.innerHTML = `
@@ -66,7 +64,6 @@
           queueDiv.appendChild(qEl);
         });
   
-        // Show agents table
         agents.forEach(agent => {
           const row = document.createElement('tr');
           row.innerHTML = `
@@ -87,7 +84,6 @@
       }
     }
   
-    // Initial call + polling every 5 seconds
     loadData();
     setInterval(loadData, 5000);
   </script>

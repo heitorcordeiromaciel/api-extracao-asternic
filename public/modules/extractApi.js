@@ -7,11 +7,15 @@ const extractApi = async () => {
 	const context = await browser.newContext({ ignoreHTTPSErrors: true });
 	const page = await context.newPage();
 
+	const ip = '';
+	const username = '';
+	const password = '';
+
 	try {
 		logger.log('Tentando logar no asternic...');
-		await page.goto('https://192.168.10.250/stats');
-		await page.locator('#user').fill('admin');
-		await page.locator('#password').fill('Imp3r@tr1z');
+		await page.goto(`${ip}`);
+		await page.locator('#user').fill(`${username}`);
+		await page.locator('#password').fill(`${password}`);
 		await page.locator('#submit').click();
 		logger.log('Logado com sucesso!');
 
@@ -64,7 +68,7 @@ const extractApi = async () => {
 						const pena = cols[6]?.innerText.trim();
 						const ultimaLig = cols[7]?.innerText.trim();
 						const ligacoesAtend = cols[8]?.innerText.trim();
-				
+
 						return {
 							nome,
 							sip,
@@ -78,7 +82,7 @@ const extractApi = async () => {
 						};
 					})
 				);
-				
+
 				fs.writeFileSync('./data/agent_status.json', JSON.stringify(agentes, null, 2));
 				fs.writeFileSync('./data/asternic_data.json', JSON.stringify(data, null, 2));
 				logger.log('Dados atualizados com sucesso.');
