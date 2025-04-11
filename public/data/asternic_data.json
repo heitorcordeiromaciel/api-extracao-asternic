@@ -1,0 +1,32 @@
+[
+  {
+    "queue": "MANUAL",
+    "waiting": 0,
+    "agents": 0,
+    "available": 0,
+    "busy": 0,
+    "paused": 0,
+    "received": 0,
+    "answered": 0,
+    "abandoned": 0,
+    "abandonRate": "0.00 %",
+    "avgWait": "00:00:00",
+    "avgDuration": "00:00:00",
+    "maxWaitTime": "00:00:00"
+  },
+  {
+    "queue": "SANASA",
+    "waiting": 0,
+    "agents": 15,
+    "available": -1,
+    "busy": 13,
+    "paused": 3,
+    "received": 758,
+    "answered": 734,
+    "abandoned": 24,
+    "abandonRate": "3.17 %",
+    "avgWait": "00:01:20",
+    "avgDuration": "00:03:12",
+    "maxWaitTime": "00:00:00"
+  }
+]

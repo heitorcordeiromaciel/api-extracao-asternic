@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agent Dashboard</title>
+</head>
+<body>
+  <h1>Agent Dashboard</h1>
+
+  <h2>Queue Summary</h2>
+  <div id="queues"></div>
+
+  <h2>Agents</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>SIP</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th>Number</th>
+        <th>Queue</th>
+        <th>Last Call</th>
+        <th>Calls Answered</th>
+      </tr>
+    </thead>
+    <tbody id="agents-body"></tbody>
+  </table>
+
+  <script>
+    async function loadData() {
+      try {
+        const [agentRes, queueRes] = await Promise.all([
+          fetch('/data/agent_status.json'),
+          fetch('/data/asternic_data.json')
+        ]);
+  
+        const agents = await agentRes.json();
+        const queues = await queueRes.json();
+  
+        const queueDiv = document.getElementById('queues');
+        const agentsBody = document.getElementById('agents-body');
+  
+        // Clear previous content
+        queueDiv.innerHTML = '';
+        agentsBody.innerHTML = '';
+  
+        // Show queue summaries
+        queues.forEach(queue => {
+          const qEl = document.createElement('div');
+          qEl.innerHTML = `
+            <h3>${queue.queue}</h3>
+            <p>
+              Waiting: ${queue.waiting} |
+              Agents: ${queue.agents} |
+              Busy: ${queue.busy} |
+              Paused: ${queue.paused} |
+              Answered: ${queue.answered} |
+              Abandoned: ${queue.abandoned} |
+              Abandon Rate: ${queue.abandonRate} |
+              Avg Wait: ${queue.avgWait} |
+              Avg Duration: ${queue.avgDuration} |
+              Max Wait: ${queue.maxWaitTime}
+            </p>
+          `;
+          queueDiv.appendChild(qEl);
+        });
+  
+        // Show agents table
+        agents.forEach(agent => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${agent.nome}</td>
+            <td>${agent.sip}</td>
+            <td>${agent.status}</td>
+            <td>${agent.duracao}</td>
+            <td>${agent.numero || '-'}</td>
+            <td>${agent.fila || '-'}</td>
+            <td>${agent.ultimaLig}</td>
+            <td>${agent.ligacoesAtend}</td>
+          `;
+          agentsBody.appendChild(row);
+        });
+  
+      } catch (err) {
+        console.error('Error loading JSON data:', err);
+      }
+    }
+  
+    // Initial call + polling every 5 seconds
+    loadData();
+    setInterval(loadData, 5000);
+  </script>
+</body>
+</html>
