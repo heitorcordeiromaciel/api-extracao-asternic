@@ -11,20 +11,34 @@ const extractApi = async () => {
 				const rows = document.querySelectorAll('#yrealtimequeuesummary tbody tr');
 				const queueData = {};
 
+				const parseTimeToSecondsString = (time) => {
+					const parts = time.split(':').map(part => parseInt(part, 10));
+					if (parts.length === 3) {
+						return (parts[0] * 3600 + parts[1] * 60 + parts[2]).toString();
+					} else if (parts.length === 2) {
+						return (parts[0] * 60 + parts[1]).toString();
+					}
+					return "0";
+				};
+
 				rows.forEach(row => {
 					const cells = row.querySelectorAll('td');
 					if (cells.length === 13) {
-						const queueName = cells[0].innerText.trim();
+						let queueName = cells[0].innerText.trim();
 
-						const parseTimeToSecondsString = (time) => {
-							const parts = time.split(':').map(part => parseInt(part, 10));
-							if (parts.length === 3) {
-								return (parts[0] * 3600 + parts[1] * 60 + parts[2]).toString();
-							} else if (parts.length === 2) {
-								return (parts[0] * 60 + parts[1]).toString();
-							}
-							return "0";
-						};
+						switch (queueName) {
+							case "RECEPTIVO":
+								queueName = "20000";
+								break;
+							case "ATIVO":
+								queueName = "30000";
+								break;
+							case "CALLBACK":
+								queueName = "40000";
+								break;
+							default:
+								queueName = "unknown";
+						}
 
 						queueData[queueName] = {
 							"Waiting": cells[1].innerText.trim(),
@@ -59,27 +73,56 @@ const extractApi = async () => {
 
 				rows.forEach(row => {
 					const cols = row.querySelectorAll('td');
-					const filas = cols[0]?.innerText.trim();
+					let queueType = cols[0]?.innerText.trim();
 					const nome = cols[1]?.innerText.trim();
 					const sip = cols[1]?.querySelector('span')?.getAttribute('title') || '';
 					const statusText = cols[2]?.innerText.trim();
 					const duracao = cols[3]?.innerText.trim();
 					const numero = cols[4]?.innerText.trim();
-					const fila = cols[5]?.innerText.trim() || "";
+					let fila = cols[5]?.innerText.trim() || "";
 					const pena = cols[6]?.innerText.trim();
 					const ultimaLig = cols[7]?.innerText.trim();
 					const ligacoesAtend = cols[8]?.innerText.trim();
 
-					let status = "unavailable";
-					if (statusText.toLowerCase().includes("ocupado")) status = "busy";
-					else if (statusText.toLowerCase().includes("logado")) status = "not in use";
-					else if (statusText.toLowerCase().includes("pausado")) status = "paused";
-
-					if (!result[filas]) {
-						result[filas] = {};
+					switch (queueType) {
+						case "RECEPTIVO":
+							queueType = "20000";
+							break;
+						case "ATIVO":
+							queueType = "30000";
+							break;
+						case "CALLBACK":
+							queueType = "40000";
+							break;
+						default:
+							queueType = "unknown";
 					}
 
-					result[filas][nome] = {
+					switch (fila) {
+						case "RECEPTIVO":
+							fila = "20000";
+							break;
+						case "ATIVO":
+							fila = "30000";
+							break;
+						case "CALLBACK":
+							fila = "40000";
+							break;
+						default:
+							fila = "unknown";
+					}
+
+					let status = "unavailable";
+					const lowerStatus = statusText.toLowerCase();
+					if (lowerStatus.includes("ocupado")) status = "busy";
+					else if (lowerStatus.includes("logado")) status = "not in use";
+					else if (lowerStatus.includes("pausado")) status = "paused";
+
+					if (!result[queueType]) {
+						result[queueType] = {};
+					}
+
+					result[queueType][nome] = {
 						location: sip,
 						lastCall: ligacoesAtend || "0",
 						status,
@@ -96,16 +139,14 @@ const extractApi = async () => {
 				return { agents: result };
 			});
 
-			const payload = ({
+			logger.log('Dados atualizados com sucesso.');
+			return {
 				status: {
 					success: true
 				},
 				summary: data,
 				agents: agents
-			})
-
-			logger.log('Dados atualizados com sucesso.');
-			return { payload };
+			};
 
 		} catch (scrapeError) {
 			logger.error('Erro ao tentar extrair dados: ' + scrapeError.message);
