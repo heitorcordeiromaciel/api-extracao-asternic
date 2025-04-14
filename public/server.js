@@ -1,12 +1,13 @@
 const path = require('path');
 const express = require('express');
 const { extractApi } = require('./modules/extractApi');
+const { openBrowser } = require('./modules/browser');
 const logger = require('./helpers/logger');
 
 const app = express();
 router = express.Router();
 const port = 80;
-const ip = '';
+const ip = '192.168.1.170';
 
 app.use('/data', express.static(path.join(__dirname, 'data')));
 app.get('/', (req, res) => {
@@ -20,5 +21,5 @@ app.get('/extract-asternic', async (req, res) => {
 
 app.listen(port, ip, () => {
 	logger.log(`Servidor iniciado em http://${ip}:${port}`);
-	extractApi();
+	openBrowser();
 });

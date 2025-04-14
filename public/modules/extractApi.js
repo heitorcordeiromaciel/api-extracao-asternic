@@ -1,99 +1,120 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const logger = require('./../helpers/logger');
+const { getPage } = require('./browser');
 
 const extractApi = async () => {
-	const browser = await chromium.launch({ headless: true });
-	const context = await browser.newContext({ ignoreHTTPSErrors: true });
-	const page = await context.newPage();
-
-	const ip = '';
-	const username = '';
-	const password = '';
-
 	try {
-		logger.log('Tentando logar no asternic...');
-		await page.goto(`${ip}`);
-		await page.locator('#user').fill(`${username}`);
-		await page.locator('#password').fill(`${password}`);
-		await page.locator('#submit').click();
-		logger.log('Logado com sucesso!');
+		const page = getPage();
+		try {
+			const data = await page.evaluate(() => {
+				const rows = document.querySelectorAll('#yrealtimequeuesummary tbody tr');
+				const queueData = {};
 
-		await page.waitForTimeout(500);
-		await page.getByRole('link', { name: 'Hoje' }).click();
-		await page.locator('#showReport').click();
-		await page.waitForTimeout(500);
-		await page.getByRole('link', { name: 'Tempo Real' }).click();
-		await page.waitForTimeout(500);
+				rows.forEach(row => {
+					const cells = row.querySelectorAll('td');
+					if (cells.length === 13) {
+						const queueName = cells[0].innerText.trim();
 
-		setInterval(async () => {
-			try {
-				const data = await page.evaluate(() => {
-					const rows = document.querySelectorAll('#yrealtimequeuesummary tbody tr');
-					const queueData = [];
+						const parseTimeToSecondsString = (time) => {
+							const parts = time.split(':').map(part => parseInt(part, 10));
+							if (parts.length === 3) {
+								return (parts[0] * 3600 + parts[1] * 60 + parts[2]).toString();
+							} else if (parts.length === 2) {
+								return (parts[0] * 60 + parts[1]).toString();
+							}
+							return "0";
+						};
 
-					rows.forEach(row => {
-						const cells = row.querySelectorAll('td');
-						if (cells.length === 13) {
-							queueData.push({
-								queue: cells[0].innerText.trim(),
-								waiting: parseInt(cells[1].innerText.trim()) || 0,
-								agents: parseInt(cells[2].innerText.trim()) || 0,
-								available: parseInt(cells[3].innerText.trim()) || 0,
-								busy: parseInt(cells[4].innerText.trim()) || 0,
-								paused: parseInt(cells[5].innerText.trim()) || 0,
-								received: parseInt(cells[6].innerText.trim()) || 0,
-								answered: parseInt(cells[7].innerText.trim()) || 0,
-								abandoned: parseInt(cells[8].innerText.trim()) || 0,
-								abandonRate: cells[9].innerText.trim(),
-								avgWait: cells[10].innerText.trim(),
-								avgDuration: cells[11].innerText.trim(),
-								maxWaitTime: cells[12].innerText.trim()
-							});
-						}
-					});
-
-					return queueData;
+						queueData[queueName] = {
+							"Waiting": cells[1].innerText.trim(),
+							"Agents": cells[2].innerText.trim(),
+							"Available": cells[3].innerText.trim(),
+							"Busy": cells[4].innerText.trim(),
+							"Paused": cells[5].innerText.trim(),
+							"Received": cells[6].innerText.trim(),
+							"Answered": cells[7].innerText.trim(),
+							"Abandoned": cells[8].innerText.trim(),
+							"Abandon Rate": cells[9].innerText.trim().replace('%', '').trim(),
+							"Avg Wait": parseTimeToSecondsString(cells[10].innerText.trim()),
+							"Avg Duration": parseTimeToSecondsString(cells[11].innerText.trim()),
+							"Max. wait time": parseTimeToSecondsString(cells[12].innerText.trim())
+						};
+					}
 				});
 
-				const agentes = await page.$$eval('table.stripped.table-bordered tbody tr', rows =>
-					rows.map(row => {
-						const cols = row.querySelectorAll('td');
-						const nome = cols[1]?.innerText.trim();
-						const sip = cols[1]?.querySelector('span')?.getAttribute('title') || '';
-						const status = cols[2]?.innerText.trim();
-						const duracao = cols[3]?.innerText.trim();
-						const numero = cols[4]?.innerText.trim();
-						const fila = cols[5]?.innerText.trim();
-						const pena = cols[6]?.innerText.trim();
-						const ultimaLig = cols[7]?.innerText.trim();
-						const ligacoesAtend = cols[8]?.innerText.trim();
+				return { queue: queueData };
+			});
 
-						return {
-							nome,
-							sip,
-							status,
-							duracao,
-							numero,
-							fila,
-							pena,
-							ultimaLig,
-							ligacoesAtend
-						};
-					})
-				);
+			const agents = await page.$$eval('table.stripped.table-bordered tbody tr', rows => {
+				const result = {};
 
-				fs.writeFileSync('./data/agent_status.json', JSON.stringify(agentes, null, 2));
-				fs.writeFileSync('./data/asternic_data.json', JSON.stringify(data, null, 2));
-				logger.log('Dados atualizados com sucesso.');
-			} catch (scrapeError) {
-				logger.error('Erro ao tentar extrair dados: ' + scrapeError.message);
-			}
-		}, 5000);
+				const parseDurationToSeconds = (timeStr) => {
+					const parts = timeStr.split(':').map(p => parseInt(p, 10));
+					if (parts.length === 3) {
+						return (parts[0] * 3600 + parts[1] * 60 + parts[2]).toString();
+					}
+					return "0";
+				};
+
+				rows.forEach(row => {
+					const cols = row.querySelectorAll('td');
+					const filas = cols[0]?.innerText.trim();
+					const nome = cols[1]?.innerText.trim();
+					const sip = cols[1]?.querySelector('span')?.getAttribute('title') || '';
+					const statusText = cols[2]?.innerText.trim();
+					const duracao = cols[3]?.innerText.trim();
+					const numero = cols[4]?.innerText.trim();
+					const fila = cols[5]?.innerText.trim() || "";
+					const pena = cols[6]?.innerText.trim();
+					const ultimaLig = cols[7]?.innerText.trim();
+					const ligacoesAtend = cols[8]?.innerText.trim();
+
+					let status = "unavailable";
+					if (statusText.toLowerCase().includes("ocupado")) status = "busy";
+					else if (statusText.toLowerCase().includes("logado")) status = "not in use";
+					else if (statusText.toLowerCase().includes("pausado")) status = "paused";
+
+					if (!result[filas]) {
+						result[filas] = {};
+					}
+
+					result[filas][nome] = {
+						location: sip,
+						lastCall: ligacoesAtend || "0",
+						status,
+						paused: pena || "0",
+						auxType: "",
+						auxSeconds: "0",
+						callFromQueue: fila,
+						penalty: pena || "0",
+						callerid: numero || "",
+						duration: parseDurationToSeconds(duracao)
+					};
+				});
+
+				return { agents: result };
+			});
+
+			const payload = JSON.stringify({
+				status: {
+					success: true
+				},
+				summary: data,
+				agents: agents
+			}, null, 2)
+
+			logger.log('Dados atualizados com sucesso.');
+			return { payload };
+
+		} catch (scrapeError) {
+			logger.error('Erro ao tentar extrair dados: ' + scrapeError.message);
+		}
 
 	} catch (e) {
 		logger.error('Erro ao inicializar extração: ' + e.message);
-	}
+		context.close();
+		browser.close();
+	};
 };
-
 module.exports.extractApi = extractApi;
