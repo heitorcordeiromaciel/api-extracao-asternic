@@ -9,9 +9,9 @@ const openBrowser = async () => {
 	const context = await browser.newContext({ ignoreHTTPSErrors: true });
 	page = await context.newPage();
 
-	const ip = 'http://10.70.10.252/stats';
-	const username = 'admin';
-	const password = '1ts@Cust0m3R';
+	const ip = '';
+	const username = '';
+	const password = '';
 
 	try {
 		logger.log('Tentando logar no asternic...');

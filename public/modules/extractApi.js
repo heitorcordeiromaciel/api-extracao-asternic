@@ -96,13 +96,13 @@ const extractApi = async () => {
 				return { agents: result };
 			});
 
-			const payload = JSON.stringify({
+			const payload = ({
 				status: {
 					success: true
 				},
 				summary: data,
 				agents: agents
-			}, null, 2)
+			})
 
 			logger.log('Dados atualizados com sucesso.');
 			return { payload };

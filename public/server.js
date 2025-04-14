@@ -6,8 +6,8 @@ const logger = require('./helpers/logger');
 
 const app = express();
 router = express.Router();
-const port = 80;
-const ip = '192.168.1.170';
+const port = 8080;
+const ip = '';
 
 app.use('/data', express.static(path.join(__dirname, 'data')));
 app.get('/', (req, res) => {
