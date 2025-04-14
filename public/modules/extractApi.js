@@ -109,7 +109,7 @@ const extractApi = async () => {
 							fila = "40000";
 							break;
 						default:
-							fila = "unknown";
+							fila = "";
 					}
 
 					let status = "unavailable";
