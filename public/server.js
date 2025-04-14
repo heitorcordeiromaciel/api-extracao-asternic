@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const { extractApi } = require('./modules/extractApi');
+const { openBrowser } = require('./modules/browser');
 const logger = require('./helpers/logger');
 
 const app = express();
@@ -20,5 +21,5 @@ app.get('/extract-asternic', async (req, res) => {
 
 app.listen(port, ip, () => {
 	logger.log(`Servidor iniciado em http://${ip}:${port}`);
-	extractApi();
+	openBrowser();
 });
