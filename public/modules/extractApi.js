@@ -136,7 +136,7 @@ const extractApi = async () => {
 					};
 				});
 
-				return { agents: result };
+				return result;
 			});
 
 			logger.log('Dados atualizados com sucesso.');
@@ -145,7 +145,7 @@ const extractApi = async () => {
 					success: true
 				},
 				summary: data,
-				agents: agents
+				agents
 			};
 
 		} catch (scrapeError) {
