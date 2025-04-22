@@ -1,22 +1,28 @@
+require('dotenv').config({ path: '/.env' });
 const path = require('path');
 const express = require('express');
 const { extractApi } = require('./modules/extractApi');
-const { openBrowser } = require('./modules/browser');
+const { openBrowser, reopenBrowser } = require('./modules/browser');
 const logger = require('./helpers/logger');
 
 const app = express();
 router = express.Router();
-const port = 8080;
-const ip = '';
-
-app.use('/data', express.static(path.join(__dirname, 'data')));
-app.get('/', (req, res) => {
-	res.sendFile(path.join(__dirname, 'index.html'));
-})
+const port = process.env.SERVER_PORT;
+const ip = process.env.SERVER_IP;
 
 app.get('/extract-asternic', async (req, res) => {
-	const result = await extractApi();
-	res.json(result);
+	try {
+		const result = await extractApi();
+		res.json(result);
+	} catch (e) {
+		if (e.message.includes('Sessão expirada')) {
+			logger.warn('Tentando relogar...');
+			await reopenBrowser();
+			const retry = await extractApi();
+			return res.json(retry);
+		};
+	};
+
 });
 
 app.listen(port, ip, () => {

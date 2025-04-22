@@ -1,0 +1,17 @@
+stages:
+  - deploy
+
+deploy-to-local:
+  stage: deploy
+  only:
+    - master
+  script:
+    - echo "Deploying Node.js API..."
+    - rsync -a --delete $CI_PROJECT_DIR/ /home/ti/api-extracao-asternic/
+    - chown -R gitlab-runner:gitlab-runner /home/ti/api-extracao-asternic
+    - cd /home/ti/api-extracao-asternic
+    - npm install
+    - cd public/
+    - pm2 describe apiExtract > /dev/null && pm2 restart apiExtract || pm2 start server.js --name apiExtract
+  tags:
+    - apiExtractRunner
